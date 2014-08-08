@@ -33,28 +33,11 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // set default values in the app's SharedPreferences
-        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+        this.setupPreferences();
 
-        // register listener for SharedPreferences changes
-        PreferenceManager.getDefaultSharedPreferences(this).
-                registerOnSharedPreferenceChangeListener(
-                        this.preferenceChangeListener);
+        this.setupScreen();
 
-        // determine screen size
-        int screenSize = getResources().getConfiguration().screenLayout &
-                Configuration.SCREENLAYOUT_SIZE_MASK;
-
-        // if device is a tablet, set phoneDevice to false
-        if (screenSize == Configuration.SCREENLAYOUT_SIZE_LARGE ||
-                screenSize == Configuration.SCREENLAYOUT_SIZE_XLARGE)
-            this.phoneDevice = false; // not a phone-sized device
-
-        // if running on phone-sized device, allow only portrait orientation
-        if (this.phoneDevice)
-            setRequestedOrientation(
-                    ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-    } // end method onCreate
+    }
 
     // called after onCreate completes execution
     @Override
@@ -62,18 +45,9 @@ public class MainActivity extends Activity {
         super.onStart();
 
         if (this.preferencesChanged) {
-            // now that the default preferences have been set,
-            // initialize QuizFragment and start the quiz
-            QuizFragment quizFragment = (QuizFragment)
-                    getFragmentManager().findFragmentById(R.id.quizFragment);
-            quizFragment.updateGuessRows(
-                    PreferenceManager.getDefaultSharedPreferences(this));
-            quizFragment.updateRegions(
-                    PreferenceManager.getDefaultSharedPreferences(this));
-            quizFragment.resetQuiz();
-            this.preferencesChanged = false;
+            this.reconfigureQuizFragment();
         }
-    } // end method onStart
+    }
 
     // show menu if app is running on a phone or a portrait-oriented tablet
     @Override
@@ -143,6 +117,55 @@ public class MainActivity extends Activity {
                             R.string.restarting_quiz, Toast.LENGTH_SHORT).show();
                 } // end method onSharedPreferenceChanged
             }; // end anonymous inner class
+
+    /**
+     * Sets screen configuration.
+     */
+    private void setupScreen() {
+        // determine screen size
+        int screenSize = getResources().getConfiguration().screenLayout &
+                Configuration.SCREENLAYOUT_SIZE_MASK;
+
+        // if device is a tablet, set phoneDevice to false
+        if (screenSize == Configuration.SCREENLAYOUT_SIZE_LARGE ||
+                screenSize == Configuration.SCREENLAYOUT_SIZE_XLARGE) {
+            this.phoneDevice = false; // not a phone-sized device
+        }
+
+        // if running on phone-sized device, allow only portrait orientation
+        if (this.phoneDevice) {
+            setRequestedOrientation(
+                    ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        }
+    }
+
+    /**
+     * Configure preferences
+     */
+    private void setupPreferences() {
+        // set default values in SharedPreferences
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+
+        // register listener for SharedPreferences changes
+        PreferenceManager.getDefaultSharedPreferences(this).
+                registerOnSharedPreferenceChangeListener(
+                        this.preferenceChangeListener);
+    }
+
+    /**
+     * Reconfigure the quiz fragment, reset and show it.
+     */
+    private void reconfigureQuizFragment() {
+        QuizFragment quizFragment = (QuizFragment)
+                getFragmentManager().findFragmentById(R.id.quizFragment);
+        quizFragment.updateGuessRows(
+                PreferenceManager.getDefaultSharedPreferences(this));
+        quizFragment.updateRegions(
+                PreferenceManager.getDefaultSharedPreferences(this));
+        quizFragment.resetQuiz();
+        this.preferencesChanged = false;
+    }
+
 } // end class MainActivity
 
 
