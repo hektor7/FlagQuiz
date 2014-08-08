@@ -32,6 +32,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import butterknife.ButterKnife;
+import butterknife.InjectView;
+import butterknife.InjectViews;
+
 public class QuizFragment extends Fragment {
     // String used when logging error messages
     private static final String TAG = "FlagQuiz Activity";
@@ -49,52 +53,50 @@ public class QuizFragment extends Fragment {
     private Handler handler; // used to delay loading next flag
     private Animation shakeAnimation; // animation for incorrect guess
 
-    private TextView questionNumberTextView; // shows current question #
-    private ImageView flagImageView; // displays a flag
-    private LinearLayout[] guessLinearLayouts; // rows of answer Buttons
-    private TextView answerTextView; // displays Correct! or Incorrect!
+    @InjectView(R.id.questionNumberTextView)
+    TextView questionNumberTextView; // shows current question #
+
+    @InjectView(R.id.flagImageView)
+    ImageView flagImageView; // displays a flag
+
+    @InjectViews({R.id.row1LinearLayout, R.id.row2LinearLayout, R.id.row3LinearLayout})
+    LinearLayout[] guessLinearLayouts; // rows of answer Buttons
+
+    @InjectView(R.id.answerTextView)
+    TextView answerTextView; // displays Correct! or Incorrect!
 
     // configures the QuizFragment when its View is created
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
+
         View view =
                 inflater.inflate(R.layout.fragment_quiz, container, false);
 
-        fileNameList = new ArrayList<String>();
-        quizCountriesList = new ArrayList<String>();
-        random = new SecureRandom();
-        handler = new Handler();
+        //Injectar vistas
+        ButterKnife.inject(this, view);
+
+        this.fileNameList = new ArrayList<String>();
+        this.quizCountriesList = new ArrayList<String>();
+        this.random = new SecureRandom();
+        this.handler = new Handler();
 
         // load the shake animation that's used for incorrect answers
-        shakeAnimation = AnimationUtils.loadAnimation(getActivity(),
+        this.shakeAnimation = AnimationUtils.loadAnimation(getActivity(),
                 R.anim.incorrect_shake);
-        shakeAnimation.setRepeatCount(3); // animation repeats 3 times
-
-        // get references to GUI components
-        questionNumberTextView =
-                (TextView) view.findViewById(R.id.questionNumberTextView);
-        flagImageView = (ImageView) view.findViewById(R.id.flagImageView);
-        guessLinearLayouts = new LinearLayout[3];
-        guessLinearLayouts[0] =
-                (LinearLayout) view.findViewById(R.id.row1LinearLayout);
-        guessLinearLayouts[1] =
-                (LinearLayout) view.findViewById(R.id.row2LinearLayout);
-        guessLinearLayouts[2] =
-                (LinearLayout) view.findViewById(R.id.row3LinearLayout);
-        answerTextView = (TextView) view.findViewById(R.id.answerTextView);
+        this.shakeAnimation.setRepeatCount(3); // animation repeats 3 times
 
         // configure listeners for the guess Buttons
         for (LinearLayout row : guessLinearLayouts) {
             for (int column = 0; column < row.getChildCount(); column++) {
                 Button button = (Button) row.getChildAt(column);
-                button.setOnClickListener(guessButtonListener);
+                button.setOnClickListener(this.guessButtonListener);
             }
         }
 
         // set questionNumberTextView's text
-        questionNumberTextView.setText(
+        this.questionNumberTextView.setText(
                 getResources().getString(R.string.question, 1, FLAGS_IN_QUIZ));
         return view; // returns the fragment's view for display
     } // end method onCreateView
@@ -104,20 +106,20 @@ public class QuizFragment extends Fragment {
         // get the number of guess buttons that should be displayed
         String choices =
                 sharedPreferences.getString(MainActivity.CHOICES, null);
-        guessRows = Integer.parseInt(choices) / 3;
+        this.guessRows = Integer.parseInt(choices) / 3;
 
         // hide all guess button LinearLayouts
-        for (LinearLayout layout : guessLinearLayouts)
+        for (LinearLayout layout : this.guessLinearLayouts)
             layout.setVisibility(View.INVISIBLE);
 
         // display appropriate guess button LinearLayouts
-        for (int row = 0; row < guessRows; row++)
-            guessLinearLayouts[row].setVisibility(View.VISIBLE);
+        for (int row = 0; row < this.guessRows; row++)
+            this.guessLinearLayouts[row].setVisibility(View.VISIBLE);
     }
 
     // update world regions for quiz based on values in SharedPreferences
     public void updateRegions(SharedPreferences sharedPreferences) {
-        regionsSet =
+        this.regionsSet =
                 sharedPreferences.getStringSet(MainActivity.REGIONS, null);
     }
 
@@ -125,56 +127,56 @@ public class QuizFragment extends Fragment {
     public void resetQuiz() {
         // use AssetManager to get image file names for enabled regions
         AssetManager assets = getActivity().getAssets();
-        fileNameList.clear(); // empty list of image file names
+        this.fileNameList.clear(); // empty list of image file names
 
         try {
             // loop through each region
-            for (String region : regionsSet) {
+            for (String region : this.regionsSet) {
                 // get a list of all flag image files in this region
                 String[] paths = assets.list(region);
 
                 for (String path : paths)
-                    fileNameList.add(path.replace(".png", ""));
+                    this.fileNameList.add(path.replace(".png", ""));
             }
         } catch (IOException exception) {
             Log.e(TAG, "Error loading image file names", exception);
         }
 
-        correctAnswers = 0; // reset the number of correct answers made
-        totalGuesses = 0; // reset the total number of guesses the user made
-        quizCountriesList.clear(); // clear prior list of quiz countries
+        this.correctAnswers = 0; // reset the number of correct answers made
+        this.totalGuesses = 0; // reset the total number of guesses the user made
+        this.quizCountriesList.clear(); // clear prior list of quiz countries
 
         int flagCounter = 1;
-        int numberOfFlags = fileNameList.size();
+        int numberOfFlags = this.fileNameList.size();
 
         // add FLAGS_IN_QUIZ random file names to the quizCountriesList
         while (flagCounter <= FLAGS_IN_QUIZ) {
-            int randomIndex = random.nextInt(numberOfFlags);
+            int randomIndex = this.random.nextInt(numberOfFlags);
 
             // get the random file name
-            String fileName = fileNameList.get(randomIndex);
+            String fileName = this.fileNameList.get(randomIndex);
 
             // if the region is enabled and it hasn't already been chosen
-            if (!quizCountriesList.contains(fileName)) {
-                quizCountriesList.add(fileName); // add the file to the list
+            if (!this.quizCountriesList.contains(fileName)) {
+                this.quizCountriesList.add(fileName); // add the file to the list
                 ++flagCounter;
             }
         }
 
-        loadNextFlag(); // start the quiz by loading the first flag
+        this.loadNextFlag(); // start the quiz by loading the first flag
     } // end method resetQuiz
 
     // after the user guesses a correct flag, load the next flag
     private void loadNextFlag() {
         // get file name of the next flag and remove it from the list
-        String nextImage = quizCountriesList.remove(0);
-        correctAnswer = nextImage; // update the correct answer
-        answerTextView.setText(""); // clear answerTextView
+        String nextImage = this.quizCountriesList.remove(0);
+        this.correctAnswer = nextImage; // update the correct answer
+        this.answerTextView.setText(""); // clear answerTextView
 
         // display current question number
-        questionNumberTextView.setText(
+        this.questionNumberTextView.setText(
                 getResources().getString(R.string.question,
-                        (correctAnswers + 1), FLAGS_IN_QUIZ)
+                        (this.correctAnswers + 1), FLAGS_IN_QUIZ)
         );
 
         // extract the region from the next image's name
@@ -190,38 +192,38 @@ public class QuizFragment extends Fragment {
 
             // load the asset as a Drawable and display on the flagImageView
             Drawable flag = Drawable.createFromStream(stream, nextImage);
-            flagImageView.setImageDrawable(flag);
+            this.flagImageView.setImageDrawable(flag);
         } catch (IOException exception) {
             Log.e(TAG, "Error loading " + nextImage, exception);
         }
 
-        Collections.shuffle(fileNameList); // shuffle file names
+        Collections.shuffle(this.fileNameList); // shuffle file names
 
         // put the correct answer at the end of fileNameList
-        int correct = fileNameList.indexOf(correctAnswer);
-        fileNameList.add(fileNameList.remove(correct));
+        int correct = this.fileNameList.indexOf(this.correctAnswer);
+        this.fileNameList.add(this.fileNameList.remove(correct));
 
         // add 3, 6, or 9 guess Buttons based on the value of guessRows
-        for (int row = 0; row < guessRows; row++) {
+        for (int row = 0; row < this.guessRows; row++) {
             // place Buttons in currentTableRow
             for (int column = 0;
-                 column < guessLinearLayouts[row].getChildCount(); column++) {
+                 column < this.guessLinearLayouts[row].getChildCount(); column++) {
                 // get reference to Button to configure
                 Button newGuessButton =
-                        (Button) guessLinearLayouts[row].getChildAt(column);
+                        (Button) this.guessLinearLayouts[row].getChildAt(column);
                 newGuessButton.setEnabled(true);
 
                 // get country name and set it as newGuessButton's text
-                String fileName = fileNameList.get((row * 3) + column);
+                String fileName = this.fileNameList.get((row * 3) + column);
                 newGuessButton.setText(getCountryName(fileName));
             }
         }
 
         // randomly replace one Button with the correct answer
-        int row = random.nextInt(guessRows); // pick random row
-        int column = random.nextInt(3); // pick random column
-        LinearLayout randomRow = guessLinearLayouts[row]; // get the row
-        String countryName = getCountryName(correctAnswer);
+        int row = this.random.nextInt(this.guessRows); // pick random row
+        int column = this.random.nextInt(3); // pick random column
+        LinearLayout randomRow = this.guessLinearLayouts[row]; // get the row
+        String countryName = getCountryName(this.correctAnswer);
         ((Button) randomRow.getChildAt(column)).setText(countryName);
     } // end method loadNextFlag
 
@@ -310,8 +312,8 @@ public class QuizFragment extends Fragment {
 
     // utility method that disables all answer Buttons
     private void disableButtons() {
-        for (int row = 0; row < guessRows; row++) {
-            LinearLayout guessRow = guessLinearLayouts[row];
+        for (int row = 0; row < this.guessRows; row++) {
+            LinearLayout guessRow = this.guessLinearLayouts[row];
             for (int i = 0; i < guessRow.getChildCount(); i++)
                 guessRow.getChildAt(i).setEnabled(false);
         }

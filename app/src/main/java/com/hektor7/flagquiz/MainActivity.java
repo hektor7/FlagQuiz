@@ -39,7 +39,7 @@ public class MainActivity extends Activity {
         // register listener for SharedPreferences changes
         PreferenceManager.getDefaultSharedPreferences(this).
                 registerOnSharedPreferenceChangeListener(
-                        preferenceChangeListener);
+                        this.preferenceChangeListener);
 
         // determine screen size
         int screenSize = getResources().getConfiguration().screenLayout &
@@ -48,10 +48,10 @@ public class MainActivity extends Activity {
         // if device is a tablet, set phoneDevice to false
         if (screenSize == Configuration.SCREENLAYOUT_SIZE_LARGE ||
                 screenSize == Configuration.SCREENLAYOUT_SIZE_XLARGE)
-            phoneDevice = false; // not a phone-sized device
+            this.phoneDevice = false; // not a phone-sized device
 
         // if running on phone-sized device, allow only portrait orientation
-        if (phoneDevice)
+        if (this.phoneDevice)
             setRequestedOrientation(
                     ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
     } // end method onCreate
@@ -61,7 +61,7 @@ public class MainActivity extends Activity {
     protected void onStart() {
         super.onStart();
 
-        if (preferencesChanged) {
+        if (this.preferencesChanged) {
             // now that the default preferences have been set,
             // initialize QuizFragment and start the quiz
             QuizFragment quizFragment = (QuizFragment)
@@ -71,7 +71,7 @@ public class MainActivity extends Activity {
             quizFragment.updateRegions(
                     PreferenceManager.getDefaultSharedPreferences(this));
             quizFragment.resetQuiz();
-            preferencesChanged = false;
+            this.preferencesChanged = false;
         }
     } // end method onStart
 
@@ -109,6 +109,7 @@ public class MainActivity extends Activity {
                 public void onSharedPreferenceChanged(
                         SharedPreferences sharedPreferences, String key) {
                     preferencesChanged = true; // user changed app settings
+
 
                     QuizFragment quizFragment = (QuizFragment)
                             getFragmentManager().findFragmentById(R.id.quizFragment);
