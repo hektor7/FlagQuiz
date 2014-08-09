@@ -77,31 +77,17 @@ public class QuizFragment extends Fragment {
         //Injectar vistas
         ButterKnife.inject(this, view);
 
-        this.fileNameList = new ArrayList<String>();
-        this.quizCountriesList = new ArrayList<String>();
-        this.random = new SecureRandom();
-        this.handler = new Handler();
+        this.setupAtributes();
+        this.setupListenerForGuessButtons();
 
-        // load the shake animation that's used for incorrect answers
-        this.shakeAnimation = AnimationUtils.loadAnimation(getActivity(),
-                R.anim.incorrect_shake);
-        this.shakeAnimation.setRepeatCount(3); // animation repeats 3 times
-
-        // configure listeners for the guess Buttons
-        for (LinearLayout row : guessLinearLayouts) {
-            for (int column = 0; column < row.getChildCount(); column++) {
-                Button button = (Button) row.getChildAt(column);
-                button.setOnClickListener(this.guessButtonListener);
-            }
-        }
-
-        // set questionNumberTextView's text
-        this.questionNumberTextView.setText(
-                getResources().getString(R.string.question, 1, FLAGS_IN_QUIZ));
         return view; // returns the fragment's view for display
     } // end method onCreateView
 
-    // update guessRows based on value in SharedPreferences
+    /**
+     * Update guessRows based on value in SharedPreferences
+     *
+     * @param sharedPreferences Preferences
+     */
     public void updateGuessRows(SharedPreferences sharedPreferences) {
         // get the number of guess buttons that should be displayed
         String choices =
@@ -117,13 +103,20 @@ public class QuizFragment extends Fragment {
             this.guessLinearLayouts[row].setVisibility(View.VISIBLE);
     }
 
-    // update world regions for quiz based on values in SharedPreferences
+    /**
+     * Update world regions for quiz based on values in SharedPreferences
+     *
+     * @param sharedPreferences
+     *                      Preferences
+     */
     public void updateRegions(SharedPreferences sharedPreferences) {
         this.regionsSet =
                 sharedPreferences.getStringSet(MainActivity.REGIONS, null);
     }
 
-    // set up and start the next quiz
+    /**
+     * Set up and start the next quiz
+     */
     public void resetQuiz() {
         // use AssetManager to get image file names for enabled regions
         AssetManager assets = getActivity().getAssets();
@@ -317,6 +310,44 @@ public class QuizFragment extends Fragment {
             for (int i = 0; i < guessRow.getChildCount(); i++)
                 guessRow.getChildAt(i).setEnabled(false);
         }
+    }
+    /**
+     * Setup listener for guess buttons
+     */
+    private void setupListenerForGuessButtons() {
+        // configure listeners for the guess Buttons
+        for (LinearLayout row : guessLinearLayouts) {
+            for (int column = 0; column < row.getChildCount(); column++) {
+                Button button = (Button) row.getChildAt(column);
+                button.setOnClickListener(this.guessButtonListener);
+            }
+        }
+    }
+
+    /**
+     * Setup atributes
+     */
+    private void setupAtributes() {
+        this.fileNameList = new ArrayList<String>();
+        this.quizCountriesList = new ArrayList<String>();
+        this.random = new SecureRandom();
+        this.handler = new Handler();
+
+        // set questionNumberTextView's text
+        this.questionNumberTextView.setText(
+                getResources().getString(R.string.question, 1, FLAGS_IN_QUIZ));
+
+        this.setupAnimation();
+    }
+
+    /**
+     * Setup shake animation
+     */
+    private void setupAnimation() {
+        // load the shake animation that's used for incorrect answers
+        this.shakeAnimation = AnimationUtils.loadAnimation(getActivity(),
+                R.anim.incorrect_shake);
+        this.shakeAnimation.setRepeatCount(3); // animation repeats 3 times
     }
 } // end class FlagQuiz
 

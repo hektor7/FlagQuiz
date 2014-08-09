@@ -28,13 +28,14 @@ public class MainActivity extends Activity {
     private boolean phoneDevice = true; // used to force portrait mode
     private boolean preferencesChanged = true; // did preferences change?
 
+    private QuizFragment quizFragment;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         this.setupPreferences();
-
         this.setupScreen();
 
     }
@@ -52,20 +53,15 @@ public class MainActivity extends Activity {
     // show menu if app is running on a phone or a portrait-oriented tablet
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // get the default Display object representing the screen
-        Display display = ((WindowManager)
-                getSystemService(WINDOW_SERVICE)).getDefaultDisplay();
-        Point screenSize = new Point(); // used to store screen size
-        display.getRealSize(screenSize); // store size in screenSize
 
         // display the app's menu only in portrait orientation
-        if (screenSize.x < screenSize.y) // x is width, y is height
-        {
+        if (this.screenIsPortrait()) {
             getMenuInflater().inflate(R.menu.main, menu); // inflate the menu
             return true;
-        } else
+        } else {
             return false;
-    } // end method onCreateOptionsMenu
+        }
+    }
 
     // displays SettingsActivity when running on a phone
     @Override
@@ -78,12 +74,11 @@ public class MainActivity extends Activity {
     // listener for changes to the app's SharedPreferences
     private OnSharedPreferenceChangeListener preferenceChangeListener =
             new OnSharedPreferenceChangeListener() {
+                //TODO: Refactor
                 // called when the user changes the app's preferences
                 @Override
-                public void onSharedPreferenceChanged(
-                        SharedPreferences sharedPreferences, String key) {
+                public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
                     preferencesChanged = true; // user changed app settings
-
 
                     QuizFragment quizFragment = (QuizFragment)
                             getFragmentManager().findFragmentById(R.id.quizFragment);
@@ -156,14 +151,53 @@ public class MainActivity extends Activity {
      * Reconfigure the quiz fragment, reset and show it.
      */
     private void reconfigureQuizFragment() {
-        QuizFragment quizFragment = (QuizFragment)
-                getFragmentManager().findFragmentById(R.id.quizFragment);
-        quizFragment.updateGuessRows(
-                PreferenceManager.getDefaultSharedPreferences(this));
-        quizFragment.updateRegions(
-                PreferenceManager.getDefaultSharedPreferences(this));
-        quizFragment.resetQuiz();
+        this.guessRowsChanges();
+        this.regionsChanges();
+        this.getQuizFragment().resetQuiz();
         this.preferencesChanged = false;
+    }
+
+    /**
+     * Reconfigure regions
+     */
+    private void regionsChanges() {
+        this.getQuizFragment().updateRegions(
+                PreferenceManager.getDefaultSharedPreferences(this));
+    }
+
+    /**
+     * Reconfigure rows
+     */
+    private void guessRowsChanges() {
+        this.getQuizFragment().updateGuessRows(
+                        PreferenceManager.getDefaultSharedPreferences(this));
+    }
+
+    /**
+     * Determines if the screen is Portrait or not.
+     *
+     * @return true if is portrait.
+     */
+    private boolean screenIsPortrait() {
+        boolean isPortrait = false;
+        // get the default Display object representing the screen
+        Display display = ((WindowManager)
+                getSystemService(WINDOW_SERVICE)).getDefaultDisplay();
+        Point screenSize = new Point(); // used to store screen size
+        display.getRealSize(screenSize); // store size in screenSize
+
+        if (screenSize.x < screenSize.y) {
+            isPortrait = true;
+        }
+
+        return isPortrait;
+    }
+
+    private QuizFragment getQuizFragment() {
+        if (this.quizFragment == null) {
+            this.quizFragment = (QuizFragment) getFragmentManager().findFragmentById(R.id.quizFragment);
+        }
+        return this.quizFragment;
     }
 
 } // end class MainActivity
