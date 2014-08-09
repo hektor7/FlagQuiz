@@ -118,27 +118,25 @@ public class QuizFragment extends Fragment {
      * Set up and start the next quiz
      */
     public void resetQuiz() {
-        // use AssetManager to get image file names for enabled regions
-        AssetManager assets = getActivity().getAssets();
-        this.fileNameList.clear(); // empty list of image file names
 
-        try {
-            // loop through each region
-            for (String region : this.regionsSet) {
-                // get a list of all flag image files in this region
-                String[] paths = assets.list(region);
+        this.resetQuizAttributes();
+        this.loadQuizCountriesList();
 
-                for (String path : paths)
-                    this.fileNameList.add(path.replace(".png", ""));
-            }
-        } catch (IOException exception) {
-            Log.e(TAG, "Error loading image file names", exception);
-        }
+        this.loadNextFlag(); // start the quiz by loading the first flag
+    }
 
-        this.correctAnswers = 0; // reset the number of correct answers made
-        this.totalGuesses = 0; // reset the total number of guesses the user made
-        this.quizCountriesList.clear(); // clear prior list of quiz countries
+    /**
+     * Load the countries list to current quiz
+     */
+    private void loadQuizCountriesList() {
+        this.loadFileNameList();
+        this.addRandomCountriesToList();
+    }
 
+    /**
+     * Add random countries to list
+     */
+    private void addRandomCountriesToList() {
         int flagCounter = 1;
         int numberOfFlags = this.fileNameList.size();
 
@@ -155,10 +153,41 @@ public class QuizFragment extends Fragment {
                 ++flagCounter;
             }
         }
+    }
 
-        this.loadNextFlag(); // start the quiz by loading the first flag
-    } // end method resetQuiz
+    /**
+     * Load the countries filename list
+     */
+    private void loadFileNameList() {
+        // use AssetManager to get image file names for enabled regions
+        this.fileNameList.clear(); // empty list of image file names
+        AssetManager assets = getActivity().getAssets();
+        try {
+            // loop through each region
+            for (String region : this.regionsSet) {
+                // get a list of all flag image files in this region
+                String[] paths = assets.list(region);
 
+                for (String path : paths)
+                    this.fileNameList.add(path.replace(".png", ""));
+            }
+        } catch (IOException exception) {
+            Log.e(TAG, "Error loading image file names", exception);
+        }
+
+    }
+
+    /**
+     * Set up initials values of quiz attributes.
+     */
+    private void resetQuizAttributes() {
+
+        this.correctAnswers = 0; // reset the number of correct answers made
+        this.totalGuesses = 0; // reset the total number of guesses the user made
+        this.quizCountriesList.clear(); // clear prior list of quiz countries
+    }
+
+    //TODO: Refactor
     // after the user guesses a correct flag, load the next flag
     private void loadNextFlag() {
         // get file name of the next flag and remove it from the list
@@ -166,6 +195,7 @@ public class QuizFragment extends Fragment {
         this.correctAnswer = nextImage; // update the correct answer
         this.answerTextView.setText(""); // clear answerTextView
 
+        //BUG: Revisar esto...
         // display current question number
         this.questionNumberTextView.setText(
                 getResources().getString(R.string.question,
