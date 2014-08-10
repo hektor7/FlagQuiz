@@ -199,23 +199,13 @@ public class QuizFragment extends Fragment {
 
     @OnClick({R.id.button1, R.id.button2, R.id.button3, R.id.button4, R.id.button5, R.id.button6, R.id.button7, R.id.button8, R.id.button9})
     public void clickAnswer(Button guessButton) {
-        String guess = guessButton.getText().toString();
-        String answer = getCountryName(correctAnswer);
-        ++totalGuesses; // increment number of guesses the user has made
 
-        if (guess.equals(answer)) // if the guess is correct
+        if (this.isCorrectAnswer(guessButton))
         {
-            ++correctAnswers; // increment the number of correct answers
+            this.setupCorrectAnswerMessage(guessButton.getText().toString());
+            this.disableButtons();
 
-            // display correct answer in green text
-            answerTextView.setText(answer + "!");
-            answerTextView.setTextColor(
-                    getResources().getColor(R.color.correct_answer));
-
-            disableButtons(); // disable all guess Buttons
-
-            // if the user has correctly identified FLAGS_IN_QUIZ flags
-            if (correctAnswers == FLAGS_IN_QUIZ) {
+            if (this.allCorrectAnswers()) {
                 // DialogFragment to display quiz stats and start new quiz
                 DialogFragment quizResults =
                         new DialogFragment() {
@@ -271,7 +261,41 @@ public class QuizFragment extends Fragment {
         }
     }
 
-    // utility method that disables all answer Buttons
+    /**
+     * Returns if all answers are correct.
+     *
+     * @return true if all are correct.
+     */
+    private boolean allCorrectAnswers() {
+        return this.correctAnswers == QuizFragment.FLAGS_IN_QUIZ;
+    }
+
+    private void setupCorrectAnswerMessage(String message) {
+        ++correctAnswers; // increment the number of correct answers
+
+        // display correct answer in green text
+        answerTextView.setText(message + "!");
+        answerTextView.setTextColor(
+                getResources().getColor(R.color.correct_answer));
+    }
+
+    /**
+     * Says if pressed button is the correct answer.
+     *
+     * @param guessButton Pressed button.
+     * @return true if correct answer.
+     */
+    private boolean isCorrectAnswer(Button guessButton) {
+        String guess = guessButton.getText().toString();
+        String answer = getCountryName(correctAnswer);
+        ++this.totalGuesses; // increment number of guesses the user has made
+
+        return guess.equals(answer);
+    }
+
+    /**
+     * Utility method that disables all answer Buttons
+     */
     private void disableButtons() {
         for (int row = 0; row < this.guessRows; row++) {
             LinearLayout guessRow = this.guessLinearLayouts[row];
@@ -421,6 +445,6 @@ public class QuizFragment extends Fragment {
         this.quizCountriesList.clear(); // clear prior list of quiz countries
     }
 
-} // end class FlagQuiz
+}
 
 
