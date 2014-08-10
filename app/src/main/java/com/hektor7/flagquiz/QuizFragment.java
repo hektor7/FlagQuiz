@@ -65,6 +65,7 @@ public class QuizFragment extends Fragment {
     @InjectView(R.id.answerTextView)
     TextView answerTextView; // displays Correct! or Incorrect!
 
+
     // configures the QuizFragment when its View is created
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -81,151 +82,22 @@ public class QuizFragment extends Fragment {
         this.setupListenerForGuessButtons();
 
         return view; // returns the fragment's view for display
-    } // end method onCreateView
-
-    /**
-     * Update guessRows based on value in SharedPreferences
-     *
-     * @param sharedPreferences Preferences
-     */
-    public void updateGuessRows(SharedPreferences sharedPreferences) {
-        // get the number of guess buttons that should be displayed
-        String choices =
-                sharedPreferences.getString(MainActivity.CHOICES, null);
-        this.guessRows = Integer.parseInt(choices) / 3;
-
-        // hide all guess button LinearLayouts
-        for (LinearLayout layout : this.guessLinearLayouts)
-            layout.setVisibility(View.INVISIBLE);
-
-        // display appropriate guess button LinearLayouts
-        for (int row = 0; row < this.guessRows; row++)
-            this.guessLinearLayouts[row].setVisibility(View.VISIBLE);
     }
 
     /**
-     * Update world regions for quiz based on values in SharedPreferences
-     *
-     * @param sharedPreferences
-     *                      Preferences
+     * After the user guesses a correct flag, load the next flag
      */
-    public void updateRegions(SharedPreferences sharedPreferences) {
-        this.regionsSet =
-                sharedPreferences.getStringSet(MainActivity.REGIONS, null);
-    }
-
-    /**
-     * Set up and start the next quiz
-     */
-    public void resetQuiz() {
-
-        this.resetQuizAttributes();
-        this.loadQuizCountriesList();
-
-        this.loadNextFlag(); // start the quiz by loading the first flag
-    }
-
-    /**
-     * Load the countries list to current quiz
-     */
-    private void loadQuizCountriesList() {
-        this.loadFileNameList();
-        this.addRandomCountriesToList();
-    }
-
-    /**
-     * Add random countries to list
-     */
-    private void addRandomCountriesToList() {
-        int flagCounter = 1;
-        int numberOfFlags = this.fileNameList.size();
-
-        // add FLAGS_IN_QUIZ random file names to the quizCountriesList
-        while (flagCounter <= FLAGS_IN_QUIZ) {
-            int randomIndex = this.random.nextInt(numberOfFlags);
-
-            // get the random file name
-            String fileName = this.fileNameList.get(randomIndex);
-
-            // if the region is enabled and it hasn't already been chosen
-            if (!this.quizCountriesList.contains(fileName)) {
-                this.quizCountriesList.add(fileName); // add the file to the list
-                ++flagCounter;
-            }
-        }
-    }
-
-    /**
-     * Load the countries filename list
-     */
-    private void loadFileNameList() {
-        // use AssetManager to get image file names for enabled regions
-        this.fileNameList.clear(); // empty list of image file names
-        AssetManager assets = getActivity().getAssets();
-        try {
-            // loop through each region
-            for (String region : this.regionsSet) {
-                // get a list of all flag image files in this region
-                String[] paths = assets.list(region);
-
-                for (String path : paths)
-                    this.fileNameList.add(path.replace(".png", ""));
-            }
-        } catch (IOException exception) {
-            Log.e(TAG, "Error loading image file names", exception);
-        }
-
-    }
-
-    /**
-     * Set up initials values of quiz attributes.
-     */
-    private void resetQuizAttributes() {
-
-        this.correctAnswers = 0; // reset the number of correct answers made
-        this.totalGuesses = 0; // reset the total number of guesses the user made
-        this.quizCountriesList.clear(); // clear prior list of quiz countries
-    }
-
-    //TODO: Refactor
-    // after the user guesses a correct flag, load the next flag
     private void loadNextFlag() {
-        // get file name of the next flag and remove it from the list
-        String nextImage = this.quizCountriesList.remove(0);
-        this.correctAnswer = nextImage; // update the correct answer
-        this.answerTextView.setText(""); // clear answerTextView
+        String nextImage = this.obtainNextGuessAndSetAnswer();
+        this.setupImageGuess(nextImage);
+        this.shuffleAnswers();
+        this.setupAnswersButtons();
+    }
 
-        //BUG: Revisar esto...
-        // display current question number
-        this.questionNumberTextView.setText(
-                getResources().getString(R.string.question,
-                        (this.correctAnswers + 1), FLAGS_IN_QUIZ)
-        );
-
-        // extract the region from the next image's name
-        String region = nextImage.substring(0, nextImage.indexOf('-'));
-
-        // use AssetManager to load next image from assets folder
-        AssetManager assets = getActivity().getAssets();
-
-        try {
-            // get an InputStream to the asset representing the next flag
-            InputStream stream =
-                    assets.open(region + "/" + nextImage + ".png");
-
-            // load the asset as a Drawable and display on the flagImageView
-            Drawable flag = Drawable.createFromStream(stream, nextImage);
-            this.flagImageView.setImageDrawable(flag);
-        } catch (IOException exception) {
-            Log.e(TAG, "Error loading " + nextImage, exception);
-        }
-
-        Collections.shuffle(this.fileNameList); // shuffle file names
-
-        // put the correct answer at the end of fileNameList
-        int correct = this.fileNameList.indexOf(this.correctAnswer);
-        this.fileNameList.add(this.fileNameList.remove(correct));
-
+    /**
+     * Set up randomly the answers buttons.
+     */
+    private void setupAnswersButtons() {
         // add 3, 6, or 9 guess Buttons based on the value of guessRows
         for (int row = 0; row < this.guessRows; row++) {
             // place Buttons in currentTableRow
@@ -242,15 +114,84 @@ public class QuizFragment extends Fragment {
             }
         }
 
+        this.setupCorrectAnswerButton();
+
+    }
+
+    /**
+     * Set up the correct answer's button.
+     */
+    private void setupCorrectAnswerButton() {
         // randomly replace one Button with the correct answer
         int row = this.random.nextInt(this.guessRows); // pick random row
         int column = this.random.nextInt(3); // pick random column
         LinearLayout randomRow = this.guessLinearLayouts[row]; // get the row
         String countryName = getCountryName(this.correctAnswer);
         ((Button) randomRow.getChildAt(column)).setText(countryName);
-    } // end method loadNextFlag
+    }
 
-    // parses the country flag file name and returns the country name
+    /**
+     * Shuffle answers and set location of the correct one
+     */
+    private void shuffleAnswers() {
+        Collections.shuffle(this.fileNameList); // shuffle file names
+
+        // put the correct answer at the end of fileNameList
+        int correct = this.fileNameList.indexOf(this.correctAnswer);
+        this.fileNameList.add(this.fileNameList.remove(correct));
+    }
+
+    /**
+     * Set up the next image (flag)
+     * @param nextImage
+     *              Next image's name
+     */
+    private void setupImageGuess(String nextImage) {
+
+        // extract the region from the next image's name
+        String region = nextImage.substring(0, nextImage.indexOf('-'));
+        // use AssetManager to load next image from assets folder
+        AssetManager assets = getActivity().getAssets();
+        try {
+            // get an InputStream to the asset representing the next flag
+            InputStream stream =
+                    assets.open(region + "/" + nextImage + ".png");
+
+            // load the asset as a Drawable and display on the flagImageView
+            Drawable flag = Drawable.createFromStream(stream, nextImage);
+            this.flagImageView.setImageDrawable(flag);
+        } catch (IOException exception) {
+            Log.e(TAG, "Error loading " + nextImage, exception);
+        }
+    }
+
+    /**
+     * Obtain next flag name and set answer.
+     * @return Next flag name
+     */
+    private String obtainNextGuessAndSetAnswer() {
+
+        // get file name of the next flag and remove it from the list
+        String nextImage = this.quizCountriesList.remove(0);
+        this.correctAnswer = nextImage; // update the correct answer
+        this.answerTextView.setText(""); // clear answerTextView
+
+        //FIXME: Revisar esto... puede que diese error aquí
+        // display current question number
+        this.questionNumberTextView.setText(
+                getResources().getString(R.string.question,
+                        (this.correctAnswers + 1), FLAGS_IN_QUIZ)
+        );
+
+        return nextImage;
+    }
+
+    /**
+     * Parses the country flag file name and returns the country name
+     *
+     * @param name Country name
+     * @return Parsed country name
+     */
     private String getCountryName(String name) {
         return name.substring(name.indexOf('-') + 1).replace('_', ' ');
     }
@@ -379,6 +320,110 @@ public class QuizFragment extends Fragment {
                 R.anim.incorrect_shake);
         this.shakeAnimation.setRepeatCount(3); // animation repeats 3 times
     }
+
+    /**
+     * Update guessRows based on value in SharedPreferences
+     *
+     * @param sharedPreferences Preferences
+     */
+    public void updateGuessRows(SharedPreferences sharedPreferences) {
+        // get the number of guess buttons that should be displayed
+        String choices =
+                sharedPreferences.getString(MainActivity.CHOICES, null);
+        this.guessRows = Integer.parseInt(choices) / 3;
+
+        // hide all guess button LinearLayouts
+        for (LinearLayout layout : this.guessLinearLayouts)
+            layout.setVisibility(View.INVISIBLE);
+
+        // display appropriate guess button LinearLayouts
+        for (int row = 0; row < this.guessRows; row++)
+            this.guessLinearLayouts[row].setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * Update world regions for quiz based on values in SharedPreferences
+     *
+     * @param sharedPreferences Preferences
+     */
+    public void updateRegions(SharedPreferences sharedPreferences) {
+        this.regionsSet =
+                sharedPreferences.getStringSet(MainActivity.REGIONS, null);
+    }
+
+    /**
+     * Set up and start the next quiz
+     */
+    public void resetQuiz() {
+
+        this.resetQuizAttributes();
+        this.loadQuizCountriesList();
+
+        this.loadNextFlag(); // start the quiz by loading the first flag
+    }
+
+    /**
+     * Load the countries list to current quiz
+     */
+    private void loadQuizCountriesList() {
+        this.loadFileNameList();
+        this.addRandomCountriesToList();
+    }
+
+    /**
+     * Add random countries to list
+     */
+    private void addRandomCountriesToList() {
+        int flagCounter = 1;
+        int numberOfFlags = this.fileNameList.size();
+
+        // add FLAGS_IN_QUIZ random file names to the quizCountriesList
+        while (flagCounter <= FLAGS_IN_QUIZ) {
+            int randomIndex = this.random.nextInt(numberOfFlags);
+
+            // get the random file name
+            String fileName = this.fileNameList.get(randomIndex);
+
+            // if the region is enabled and it hasn't already been chosen
+            if (!this.quizCountriesList.contains(fileName)) {
+                this.quizCountriesList.add(fileName); // add the file to the list
+                ++flagCounter;
+            }
+        }
+    }
+
+    /**
+     * Load the countries filename list
+     */
+    private void loadFileNameList() {
+        // use AssetManager to get image file names for enabled regions
+        this.fileNameList.clear(); // empty list of image file names
+        AssetManager assets = getActivity().getAssets();
+        try {
+            // loop through each region
+            for (String region : this.regionsSet) {
+                // get a list of all flag image files in this region
+                String[] paths = assets.list(region);
+
+                for (String path : paths)
+                    this.fileNameList.add(path.replace(".png", ""));
+            }
+        } catch (IOException exception) {
+            Log.e(TAG, "Error loading image file names", exception);
+        }
+
+    }
+
+    /**
+     * Set up initials values of quiz attributes.
+     */
+    private void resetQuizAttributes() {
+
+        this.correctAnswers = 0; // reset the number of correct answers made
+        this.totalGuesses = 0; // reset the total number of guesses the user made
+        this.quizCountriesList.clear(); // clear prior list of quiz countries
+    }
+
 } // end class FlagQuiz
 
 

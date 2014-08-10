@@ -200,6 +200,6 @@ public class MainActivity extends Activity {
         return this.quizFragment;
     }
 
-} // end class MainActivity
+}
 
 
