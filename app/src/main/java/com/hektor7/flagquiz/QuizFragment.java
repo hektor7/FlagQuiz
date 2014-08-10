@@ -206,6 +206,7 @@ public class QuizFragment extends Fragment {
             this.disableButtons();
 
             if (this.allCorrectAnswers()) {
+                //TODO: Continuar refactorizando
                 // DialogFragment to display quiz stats and start new quiz
                 DialogFragment quizResults =
                         new DialogFragment() {
